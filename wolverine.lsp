@@ -5,7 +5,8 @@
 (princ "\n")
 (command "IMAGEFRAME" "2")
 (command "VISRETAIN" "1")
-(command "EPDFSHX" "0")
+(command "PDFSHX" "0")
+(command "LWDEFAULT" "25")
 ;;(command "DIMSCALE" "48")
 ;;Add additional directories to the support file search path
 (DEFUN AddSupportPath (dir / tmp Cpath)
@@ -22,10 +23,11 @@
 (setq preferences (vla-get-Preferences acadObj))
 (vla-put-PrinterConfigPath (vla-get-files preferences) "i:\\Office Utilities\\AutoCAD\\plotters" )
 (vla-put-PrinterStyleSheetPath (vla-get-files preferences) "I:\\Office Utilities\\AutoCAD\\Plot Styles")
-;add default page setups for plotting
-(defun c:PStps ()
-  (command ".-PSETUPIN" "I:\\Office Utilities\\AutoCAD\\Page Plot Setup Overrides\\Page Setup Overides.dwt" "*")
-  )
+;;Add print overrides to sheets on drawing open
+(setq pl (vla-get-PlotConfigurations (vla-get-activedocument (vlax-get-acad-object))))
+(vlax-for item pl (vlax-invoke-method item 'delete))
+(command ".-PSETUPIN" "I:\\Office Utilities\\AutoCAD\\Page Plot Setup Overrides\\Page Setup Overides.dwt" "*")
+
 (defun c:removedlink ()
   (dictremove (namedobjdict) "ACAD_DATALINK")
   )
@@ -45,20 +47,11 @@
       (vla-get-effectivename (vlax-ename->vla-object (ssname s 0)))
       '(lambda ( obj / lin )
         (vla-put-layer obj "0")
-        (setq lin (strcase (vla-get-linetype obj)))
-        (cond
-          ( (= "BYLAYER" lin))
-          ( (= "CONTINUOUS" lin)
-            (vla-put-linetype obj "BYLAYER")
+        (vla-put-color obj 256)
+        (vla-put-linetype obj 256)
           )
-          ( t
-            (vla-put-linetype obj "HIDDEN")
-            (vla-put-linetypescale obj 1.0)
           )
         )
-      )
-    )
-  )
   (command "REGENALL")
   (princ)
 )
@@ -139,7 +132,7 @@
   (command "-layer" "s" 0)
   (command ^C^C)
   (COMMAND "-PURGE" "A" "" "N")
-  (command "-purge" "r" "" "n")
+  ;;(command "-purge" "r" "" "n")
   (command "_qsave")
   )
 
@@ -159,7 +152,7 @@
 	(command "-layer" "s" 0)
 	(command ^C^C)
 	(command "-PURGE" "A" "" "N")
-	(command "-purge" "r" "" "n")
+	;;(command "-purge" "r" "" "n")
 	(command "_qsave")
 	(command "close")
 )
@@ -171,7 +164,7 @@
 	(command "-layer" "s" 0)
 	(command ^C^C)
 	(COMMAND "-PURGE" "A" "" "N")
-	(command "-purge" "r" "" "n")
+	;;(command "-purge" "r" "" "n")
 	(command "_qsave")
 )
 
@@ -582,7 +575,7 @@
 (setq rot 0)
 (setq theblock (vla-InsertBlock pspace ip 
                       thename xscale yscale zscale rot))
-
+(command "attsync" "n" "attribute")
 (princ)
 
 );defun
@@ -594,3 +587,8 @@
   (command "-audit" "y")
   )
 	  
+(defun c:sm ()
+  (setq sel (getvar 'SELECTIONCYCLING))
+  (setq new_sel (* sel -1))
+  (setvar 'SELECTIONCYCLING new_sel)
+)
