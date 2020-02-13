@@ -7,6 +7,10 @@
 (command "VISRETAIN" "1")
 (command "PDFSHX" "0")
 (command "LWDEFAULT" "25")
+(command "XLOADCTL" "2")
+(command "WIPEOUTFRAME" "1")
+(command "-layer" "s" 0 "")
+(command "users1" "." "") ;;reset a user variable to "none" this is helpful in faking asynchronous communication
 ;;(command "DIMSCALE" "48")
 ;;Add additional directories to the support file search path
 (DEFUN AddSupportPath (dir / tmp Cpath)
@@ -16,7 +20,7 @@
   (PRINC)
   )
 (AddSupportPath "I:\\Office Utilities\\AutoCAD\\Resources\\Hatches")]
-(AddSupportPath "I:\\Office Utilities\\AutoCAD\\fonts")]
+;;(AddSupportPath "I:\\Office Utilities\\AutoCAD\\fonts")]
 ;;Add printer support path
 (vl-load-com)
 (setq acadObj (vlax-get-acad-object))
@@ -45,13 +49,9 @@
     (LM:ApplytoBlockObjects
       (vla-get-blocks (vla-get-activedocument (vlax-get-acad-object)))
       (vla-get-effectivename (vlax-ename->vla-object (ssname s 0)))
-      '(lambda ( obj / lin )
-        (vla-put-layer obj "0")
-        (vla-put-color obj 256)
-        (vla-put-linetype obj 256)
-          )
-          )
-        )
+      '(lambda ( obj / lin ) (vla-put-layer obj "0") (vla-put-color obj 256) (vla-put-linetype obj 256))
+      )
+  )
   (command "REGENALL")
   (princ)
 )
@@ -148,11 +148,13 @@
 	(command "ltscale" ".375")
 	(command ^C^C)
 	(command "tilemode" 0)
+  (command ^C^C)
+  (command "pspace")
 	(command "zoom" "e")
 	(command "-layer" "s" 0)
 	(command ^C^C)
 	(command "-PURGE" "A" "" "N")
-	;;(command "-purge" "r" "" "n")
+	;;(command "-purge" "r" "" "n")  
 	(command "_qsave")
 	(command "close")
 )
@@ -166,6 +168,18 @@
 	(COMMAND "-PURGE" "A" "" "N")
 	;;(command "-purge" "r" "" "n")
 	(command "_qsave")
+)
+
+(defun c:mxc ()
+	(COMMAND "ZOOM" "E")
+	(command "ltscale" ".375")
+	(command ^C^C)
+	(command "-layer" "s" 0)
+	(command ^C^C)
+	(COMMAND "-PURGE" "A" "" "N")
+	;;(command "-purge" "r" "" "n")
+	(command "_qsave")
+  (command "close")
 )
 
 (defun SELLAY2 (/ EN)
@@ -577,6 +591,7 @@
                       thename xscale yscale zscale rot))
 (command "attsync" "n" "attribute")
 (princ)
+(command "users1" "1" "") ;;set user variable to 1 this will trigger outside scripts to know it's complete.
 
 );defun
 ;;END Attredef
@@ -592,3 +607,18 @@
   (setq new_sel (* sel -1))
   (setvar 'SELECTIONCYCLING new_sel)
 )
+
+(defun c:Top (/ selset)
+  (prompt "Select entities to move to top of draworder. ")
+  (setq selset (ssget))
+  (command "copy" selset "" "@" "@")	;copy at same location puts ents higher in database
+  (command "erase" selset "")		;erase previous ents
+  (command "redraw")
+  (princ)
+)
+
+(defun c:dd(/ num)
+  (setq num (getint "\nEnter duct size in inches: "))
+  (princ "\n")  
+  (command "mline" "s" num "j" "z" pause)
+  )
